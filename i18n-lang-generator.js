@@ -14,8 +14,7 @@ class i18nLangGenerator {
       languages: [],
       extensions: ['vue', 'js'],
       functionName: '\\$t',
-      deleteExpired: false,
-      ignoreDefault: false
+      deleteExpired: false
     }, options)
   }
 
@@ -121,7 +120,11 @@ class i18nLangGenerator {
 
     console.log(`\n${lang}.json`)
 
-    const { base, to } = this.options
+    const {
+      base,
+      to,
+      deleteExpired
+    } = this.options
 
     const localeText = this.getLocaleConfig(lang)
 
@@ -130,10 +133,19 @@ class i18nLangGenerator {
     const report = {}
 
     localeMap.forEach((item) => {
-      if (resultMap.indexOf(item) < 0)
-        report[item] = "unused"
-      //add delete function here
+
+      if (resultMap.indexOf(item) < 0) {
+
+        if (deleteExpired)
+          this.deletePropertyPath(localeText, item)
+        else
+          report[item] = "unused"
+
+      }
+
     })
+
+    this.clean(localeText)
 
     resultMap.forEach((item) => {
       if (localeMap.indexOf(item) < 0)
@@ -168,9 +180,39 @@ class i18nLangGenerator {
 
   }
 
+  deletePropertyPath(obj, path) {
+
+    if (!obj || !path)
+      return
+
+    if (typeof path === 'string')
+      path = path.split('.')
+
+    for (let i = 0; i < path.length - 1; i++) {
+      obj = obj[path[i]]
+      if (typeof obj === 'undefined')
+        return
+    }
+
+    delete obj[path.pop()]
+
+  }
+
+  clean(o) {
+    for (var propName in o) {
+      if (typeof o[propName] == "object")
+        this.clean(o[propName])
+      if (!Object.keys(o[propName]).length)
+        delete o[propName];
+    }
+  }
+
   getLocaleConfig(language) {
     try {
-      const { base, to } = this.options
+      const {
+        base,
+        to
+      } = this.options
       const content = fs.readFileSync(`${base}/${to}/${language}.json`)
       return JSON.parse(content)
     } catch (error) {
@@ -210,7 +252,6 @@ const dir = argv.d || argv.directory || ''
 const functionName = argv.f || argv.functionName || '\\$t'
 const outputDirectory = argv.o || argv.output || 'lang'
 const deleteExpired = argv.x || argv.deleteExpired || false
-const ignoreDefault = argv.g || argv.ignoreDefault || false
 
 new i18nLangGenerator({
   base: baseDir.replace(/\/$/, ''),
@@ -218,6 +259,5 @@ new i18nLangGenerator({
   to: outputDirectory,
   languages: languages ? languages.split(' ') : [],
   functionName: functionName,
-  deleteExpired: deleteExpired,
-  ignoreDefault: ignoreDefault
+  deleteExpired: deleteExpired
 }).run()
