@@ -1,6 +1,6 @@
 {
   "name": "@code-ninja/i18n-lang-generator",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Generate translation files for vue-i18n projects",
   "main": "i18n-lang-generator.js",
   "scripts": {
