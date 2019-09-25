@@ -14,7 +14,8 @@ class i18nLangGenerator {
       languages: [],
       extensions: ['vue', 'js'],
       functionName: '\\$t',
-      deleteExpired: false
+      deleteExpired: false,
+      forceReWrite: false
     }, options)
   }
 
@@ -208,17 +209,27 @@ class i18nLangGenerator {
   }
 
   getLocaleConfig(language) {
+    const {
+      base,
+      to,
+      forceReWrite
+    } = this.options
+    const path = `${base}/${to}/${language}.json`
+
     try {
-      const {
-        base,
-        to
-      } = this.options
-      const content = fs.readFileSync(`${base}/${to}/${language}.json`)
-      return JSON.parse(content)
+      if (fs.existsSync(path)) {
+        const content = fs.readFileSync(path)
+        return JSON.parse(content)
+      } else {
+        return {}
+      }
     } catch (error) {
-      console.warn(`No translation file exists for language "${language}"`)
+      console.warn(`${path}: Please fix`, error.message, `or force to rewrite the file with the option "-r true"`)
+      if (forceReWrite)
+        return {}
+      else
+        process.exit(1)
     }
-    return {}
   }
 
 
@@ -252,6 +263,7 @@ const dir = argv.d || argv.directory || ''
 const functionName = argv.f || argv.functionName || '\\$t'
 const outputDirectory = argv.o || argv.output || 'lang'
 const deleteExpired = argv.x || argv.deleteExpired || false
+const forceReWrite = argv.r || argv.forceReWrite || false
 
 new i18nLangGenerator({
   base: baseDir.replace(/\/$/, ''),
@@ -259,5 +271,6 @@ new i18nLangGenerator({
   to: outputDirectory,
   languages: languages ? languages.split(' ') : [],
   functionName: functionName,
-  deleteExpired: deleteExpired
+  deleteExpired: deleteExpired,
+  forceReWrite: forceReWrite
 }).run()
