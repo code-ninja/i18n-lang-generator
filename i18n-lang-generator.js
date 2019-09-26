@@ -107,16 +107,16 @@ class i18nLangGenerator {
     const localeMap = this.flatten(localeText)
     const resultMap = this.flatten(result)
     const report = {}
-    let itemsDeleted = false
-    let itemsAdded = false
+    let itemDeleted = false
+    let itemAdded = false
 
     localeMap.forEach((item) => {
 
       if (resultMap.indexOf(item) < 0) {
 
         if (deleteExpired) {
-          itemsDeleted = true
           this.deletePropertyPath(localeText, item)
+          itemDeleted = true
         }
         else
           report[item] = "unused"
@@ -125,18 +125,19 @@ class i18nLangGenerator {
 
     })
 
-    this.clean(localeText)
+    if (itemDeleted)
+      this.clean(localeText)
 
     resultMap.forEach((item) => {
       if (localeMap.indexOf(item) < 0) {
-        itemsAdded = true
         report[item] = "new item added"
+        itemAdded = true
       }
     })
 
     const mergedObj = sortObject(_.merge({}, result, localeText))
 
-    if (itemsDeleted || itemsAdded)
+    if (itemAdded || itemDeleted)
       fs.writeFileSync(
         `${base}/${to}/${lang}.json`,
         JSON.stringify(mergedObj, null, 2),
