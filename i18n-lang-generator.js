@@ -36,8 +36,31 @@ class i18nLangGenerator {
   getText(files) {
     const fn = '\\$t'
     let obj = {}
-    let objMap = []
-    let strMap = []
+
+    const createPath = (obj, path) => {
+
+      let orgPath = path
+      path = typeof path === 'string' ? path.split('.') : path;
+      let current = obj
+
+      while (path.length > 1) {
+
+        const [head, ...tail] = path
+        path = tail
+        if (current[head] === undefined)
+          current[head] = {}
+        current = current[head]
+
+      }
+
+      if (!current[path[0]])
+        current[path[0]] = path[path.length - 1]
+      else if (typeof current[path[0]] === 'object')
+        throw ({ message: `Cannot create a string ${orgPath} exist as an object` })
+
+      return obj
+
+    }
 
     files.forEach((file) => {
       const text = fs.readFileSync(file, 'utf8')
@@ -45,61 +68,13 @@ class i18nLangGenerator {
       let result
       let newObj = {}
       while (result = findTranslations.exec(text)) {
-
-        let arr = result[1].split('.')
-        let parentKey = ''
-
-        arr.reduce((o, s, i) => {
-
-          try {
-
-            let last = (i + 1 == arr.length)
-
-            if (!last && !o[s]) {
-
-              if (strMap.indexOf(parentKey) > -1)
-                throw ({
-                  message: `key ${parentKey} exist as string`
-                })
-
-              objMap.push(s)
-              parentKey += parentKey ? `.${s}` : s
-              return o[s] = {}
-
-            } else if (!last && o[s]) {
-
-              parentKey += parentKey ? `.${s}` : s
-              return o[s] = o[s]
-
-            } else {
-
-              if (objMap.indexOf(s) > -1)
-                throw ({
-                  message: `key ${s} exist as object`
-                })
-
-              if (strMap.indexOf(parentKey) > -1)
-                throw ({
-                  message: `key ${parentKey} exist as string`
-                })
-
-              strMap.push(result[1])
-              parentKey += parentKey ? `.${s}` : s
-              return o[s] = s
-
-            }
-
-          } catch (e) {
-
-            console.log(`There's a conflict with ${result[1]}:`, e.message)
-            process.exit(1)
-
-          }
-        }, newObj)
-
+        try {
+          createPath(obj, result[1])
+        } catch (e) {
+          console.log(`Error creating property ${result[1]}. ${e.message}`, file)
+          process.exit(1)
+        }
       }
-
-      _.merge(obj, newObj)
     })
 
     return obj
@@ -132,13 +107,17 @@ class i18nLangGenerator {
     const localeMap = this.flatten(localeText)
     const resultMap = this.flatten(result)
     const report = {}
+    let itemsDeleted = false
+    let itemsAdded = false
 
     localeMap.forEach((item) => {
 
       if (resultMap.indexOf(item) < 0) {
 
-        if (deleteExpired)
+        if (deleteExpired) {
+          itemsDeleted = true
           this.deletePropertyPath(localeText, item)
+        }
         else
           report[item] = "unused"
 
@@ -149,17 +128,20 @@ class i18nLangGenerator {
     this.clean(localeText)
 
     resultMap.forEach((item) => {
-      if (localeMap.indexOf(item) < 0)
+      if (localeMap.indexOf(item) < 0) {
+        itemsAdded = true
         report[item] = "new item added"
+      }
     })
 
     const mergedObj = sortObject(_.merge({}, result, localeText))
 
-    fs.writeFileSync(
-      `${base}/${to}/${lang}.json`,
-      JSON.stringify(mergedObj, null, 2),
-      'utf8'
-    )
+    if (itemsDeleted || itemsAdded)
+      fs.writeFileSync(
+        `${base}/${to}/${lang}.json`,
+        JSON.stringify(mergedObj, null, 2),
+        'utf8'
+      )
 
     const iterate = (obj, parent = '') => {
       Object.keys(obj).forEach(key => {
@@ -177,7 +159,6 @@ class i18nLangGenerator {
       console.table(report)
     else
       console.log('No issues')
-
 
   }
 
