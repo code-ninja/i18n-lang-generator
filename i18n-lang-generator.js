@@ -50,12 +50,19 @@ class I18nLangGenerator {
         current = current[head]
       }
 
-      if (!current[path[0]]) {
+      if (!current[path[0]] && path[0]) {
         current[path[0]] = path[path.length - 1]
       } else if (typeof current[path[0]] === 'object') {
         throw Object.assign(
           new Error(`Cannot create a string ${orgPath} exist as an object`),
-          { code: 402 }
+          { code: 500 }
+        )
+      } else if (!path[0]) {
+        throw Object.assign(
+          new Error(`Cannot create a string property "${orgPath}"`),
+          {
+            code: 500
+          }
         )
       }
 
@@ -73,7 +80,7 @@ class I18nLangGenerator {
       // eslint-disable-next-line no-cond-assign
       while ((result = findTranslations.exec(text))) {
         try {
-          createPath(obj, result[1])
+          if (result[1] !== '') createPath(obj, result[1])
         } catch (e) {
           console.log(
             `Error creating property ${result[1]}. ${e.message}`,
