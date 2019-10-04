@@ -4,7 +4,9 @@
   "description": "Generate translation files for vue-i18n projects",
   "main": "i18n-lang-generator.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint --ext .js,.json .",
+    "lint:fix": "eslint --fix --ext .js,.json ."
   },
   "bin": {
     "i18n-lang-generator": "i18n-lang-generator.js"
@@ -30,5 +32,17 @@
     "glob": "^7.1.4",
     "lodash": "^4.17.15",
     "minimist": "^1.2.0"
+  },
+  "devDependencies": {
+    "eslint": "^6.5.1",
+    "eslint-config-prettier": "^6.3.0",
+    "eslint-config-standard": "^14.1.0",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-json": "^1.4.0",
+    "eslint-plugin-node": "^10.0.0",
+    "eslint-plugin-prettier": "^3.1.1",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-standard": "^4.0.1",
+    "prettier": "^1.18.2"
   }
 }
